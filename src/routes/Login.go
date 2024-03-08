@@ -11,22 +11,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func bsonToStruct(bsonData bson.D) objs.UserData {
-	var dataObject = struct {
-		ID       string `bson:"_id"`
-		UserData objs.UserData
-	}{}
-	byteData, _ := bson.Marshal(bsonData)
-	bson.Unmarshal(byteData, &dataObject)
-	dataObject.UserData.ID = dataObject.ID
-	return dataObject.UserData
-}
-
 func LoginUser(req *http.Request, client *mongo.Client) objs.LoginResponse {
 	var requestObj = objs.LoginRequest{}
 	var responseObj = objs.LoginResponse{}
 	var bsonData bson.D
 	json.NewDecoder(req.Body).Decode(&requestObj)
+	var dataObject = struct {
+		ID          string `bson:"_id"`
+		Name        string `bson:"name"`
+		Email       string `bson:"email`
+		Password    string `bson:"password"`
+		PictureData string `bson:"picturedata"`
+	}{}
 	responseObj.Error = nil
 	switch req.Method {
 	case "GET":
@@ -37,20 +33,21 @@ func LoginUser(req *http.Request, client *mongo.Client) objs.LoginResponse {
 		case "Mongo":
 			if validation.VerifyUserExists("email", requestObj.Email, client) {
 				collection := client.Database(objs.UserData_DB.Database).Collection(objs.UserData_DB.Collection)
-				filter := bson.M{"userdata.email": requestObj.Email}
+				filter := bson.M{"email": requestObj.Email}
 				err := collection.FindOne(context.TODO(), filter).Decode(&bsonData)
 				if err != nil {
 					responseObj.Error = err
 					responseObj.Status = false
 					responseObj.Message = "Error while Fetching Data"
 				} else {
-					if bsonToStruct(bsonData).Password == requestObj.Password {
-						data := bsonToStruct(bsonData)
+					byteData, _ := bson.Marshal(bsonData)
+					bson.Unmarshal(byteData, &dataObject)
+					if dataObject.Password == requestObj.Password {
 						responseObj.Data = objs.SecureUserData{
-							Name:        data.Name,
-							ID:          data.ID,
-							PictureData: data.PictureData,
-							Email:       data.Email,
+							Name:        dataObject.Name,
+							ID:          dataObject.ID,
+							PictureData: dataObject.PictureData,
+							Email:       dataObject.Email,
 						}
 						responseObj.Message = "Successfully Fetched User Data"
 						responseObj.Status = true

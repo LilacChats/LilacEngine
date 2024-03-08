@@ -21,7 +21,48 @@ type StandardResponse struct {
 	Error   error
 }
 
-type SignupRequest struct{ UserData }
+type SignupRequest struct {
+	Name        string
+	Email       string
+	Password    string
+	PictureData string
+}
+
+type CreateGroupRequest struct {
+	GroupName string
+	UserID    string
+}
+
+type CreateGroupResponse struct {
+	Data struct{ GroupID string }
+	StandardResponse
+}
+
+type FetchGroupsRequest struct {
+	UserID string
+}
+
+type FetchGroupsResponse struct {
+	Data []struct {
+		ID   string `bson:"_id"`
+		Name string `bson:"name"`
+	}
+	StandardResponse
+}
+
+type FetchUsersRequest struct {
+	UserID string
+}
+
+type FetchUsersResponse struct {
+	Data []struct {
+		ID          string `bson:"_id"`
+		Name        string `bson:"name"`
+		PictureData string `bson:"picturedata"`
+	}
+	StandardResponse
+}
+
 type LoginRequest struct {
 	Email    string
 	Password string
@@ -45,6 +86,11 @@ var DATABASE string = "Lilac"
 
 var UserData_DB = MongoDBObj{
 	Collection: "UserData",
+	Database:   DATABASE,
+}
+
+var GroupList_DB = MongoDBObj{
+	Collection: "Groups",
 	Database:   DATABASE,
 }
 
