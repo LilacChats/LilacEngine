@@ -25,14 +25,15 @@ func SignupUser(req *http.Request, client *mongo.Client) objs.SignupResponse {
 	case "POST":
 		switch objs.DB_CHOICE {
 		case "Mongo":
-			if !validation.VerifyUserExists("email", requestObj.Email, client) {
+			validationObj := validation.ValidateUserEmail(requestObj.Email, client)
+			if validationObj.Status {
 				collection := client.Database(objs.UserData_DB.Database).Collection(objs.UserData_DB.Collection)
 				collectionResponse, _ := collection.InsertOne(context.Background(), requestObj)
 				responseObj.Status = true
 				responseObj.Data.ID = collectionResponse.InsertedID.(primitive.ObjectID).Hex()
 				responseObj.Message = "Successfully Created User"
 			} else {
-				responseObj.Message = "User Already Exists"
+				responseObj.Message = validationObj.Message
 				responseObj.Status = false
 			}
 		}

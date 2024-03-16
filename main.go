@@ -38,6 +38,21 @@ func main() {
 			response, _ := json.Marshal(routes.FetchUsers(req, client))
 			res.Write(response)
 		})
+		mux.HandleFunc("/deletegroup", func(res http.ResponseWriter, req *http.Request) {
+			res.Header().Set("content-Type", "application/json")
+			response, _ := json.Marshal(routes.DeleteGroup(req, client))
+			res.Write(response)
+		})
+		mux.HandleFunc("/fetchgroupdata", func(res http.ResponseWriter, req *http.Request) {
+			res.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(routes.FetchGroupData(req, client))
+			res.Write(response)
+		})
+		mux.HandleFunc("/updategroupdata", func(res http.ResponseWriter, req *http.Request) {
+			res.Header().Set("Content-Type", "application/json")
+			response, _ := json.Marshal(routes.UpdateGroup(req, client))
+			res.Write(response)
+		})
 		err := http.ListenAndServe(":3000", mux)
 		if err != nil {
 			fmt.Println("Failed to started server!\n", err)

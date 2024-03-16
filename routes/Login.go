@@ -16,13 +16,7 @@ func LoginUser(req *http.Request, client *mongo.Client) objs.LoginResponse {
 	var responseObj = objs.LoginResponse{}
 	var bsonData bson.D
 	json.NewDecoder(req.Body).Decode(&requestObj)
-	var dataObject = struct {
-		ID          string `bson:"_id"`
-		Name        string `bson:"name"`
-		Email       string `bson:"email`
-		Password    string `bson:"password"`
-		PictureData string `bson:"picturedata"`
-	}{}
+	var dataObject = objs.UserData{}
 	responseObj.Error = nil
 	switch req.Method {
 	case "GET":
@@ -31,7 +25,8 @@ func LoginUser(req *http.Request, client *mongo.Client) objs.LoginResponse {
 	case "POST":
 		switch objs.DB_CHOICE {
 		case "Mongo":
-			if validation.VerifyUserExists("email", requestObj.Email, client) {
+			validationObj := validation.ValidateUserEmail(requestObj.Email, client)
+			if validationObj.Status {
 				collection := client.Database(objs.UserData_DB.Database).Collection(objs.UserData_DB.Collection)
 				filter := bson.M{"email": requestObj.Email}
 				err := collection.FindOne(context.TODO(), filter).Decode(&bsonData)
@@ -58,7 +53,7 @@ func LoginUser(req *http.Request, client *mongo.Client) objs.LoginResponse {
 				}
 			} else {
 				responseObj.Status = false
-				responseObj.Message = "User Does Not Exist"
+				responseObj.Message = validationObj.Message
 			}
 		}
 
