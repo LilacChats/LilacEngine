@@ -37,7 +37,15 @@ func FetchGroups(req *http.Request, client *mongo.Client) objs.FetchGroupsRespon
 				for _, document := range bsonData {
 					byteData, _ := bson.Marshal(document)
 					bson.Unmarshal(byteData, &doc)
-					responseObj.Data = append(responseObj.Data, doc)
+					responseObj.Data = append(responseObj.Data, struct {
+						ID      string   "json:\"id\""
+						Name    string   "json:\"name\""
+						Members []string "json:\"members\""
+					}{
+						ID:      doc.ID,
+						Name:    doc.Name,
+						Members: doc.Members,
+					})
 				}
 				cursor.Close(context.TODO())
 				responseObj.Status = true

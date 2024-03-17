@@ -52,7 +52,11 @@ type FetchGroupDataRequest struct {
 }
 
 type FetchGroupDataResponse struct {
-	Data GroupData
+	Data struct {
+		ID      string   `json:"id"`
+		Name    string   `json:"name"`
+		Members []string `json:"members"`
+	} `json:"data"`
 	StandardResponse
 }
 
@@ -85,9 +89,9 @@ type FetchGroupsRequest struct {
 
 type FetchGroupsResponse struct {
 	Data []struct {
-		ID      string   `bson:"_id"`
-		Name    string   `bson:"name"`
-		Members []string `bson:"members"`
+		ID      string   `json:"id"`
+		Name    string   `json:"name"`
+		Members []string `json:"members"`
 	} `json:"data"`
 	StandardResponse
 }
@@ -98,9 +102,9 @@ type FetchUsersRequest struct {
 
 type FetchUsersResponse struct {
 	Data []struct {
-		ID          string `bson:"_id"`
-		Name        string `bson:"name"`
-		PictureData string `bson:"picturedata"`
+		ID          string `json:"id"`
+		Name        string `json:"name"`
+		PictureData string `json:"pictureData"`
 	} `json:"data"`
 	StandardResponse
 }

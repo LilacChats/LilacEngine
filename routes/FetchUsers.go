@@ -38,7 +38,15 @@ func FetchUsers(req *http.Request, client *mongo.Client) objs.FetchUsersResponse
 			for _, document := range bsonData {
 				byteData, _ := bson.Marshal(document)
 				bson.Unmarshal(byteData, &doc)
-				responseObj.Data = append(responseObj.Data, doc)
+				responseObj.Data = append(responseObj.Data, struct {
+					ID          string `json:"id"`
+					Name        string `json:"name"`
+					PictureData string `json:"pictureData"`
+				}{
+					ID:          doc.ID,
+					Name:        doc.Name,
+					PictureData: doc.PictureData,
+				})
 			}
 			cursor.Close(context.TODO())
 			responseObj.Status = true

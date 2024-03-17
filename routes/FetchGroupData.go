@@ -32,7 +32,15 @@ func FetchGroupData(req *http.Request, client *mongo.Client) objs.FetchGroupData
 				collection.FindOne(context.TODO(), bson.M{"_id": groupID}).Decode(&bsonData)
 				byteData, _ := bson.Marshal(bsonData)
 				bson.Unmarshal(byteData, &doc)
-				responseObj.Data = doc
+				responseObj.Data = struct {
+					ID      string   "json:\"id\""
+					Name    string   "json:\"name\""
+					Members []string "json:\"members\""
+				}{
+					ID:      doc.ID,
+					Name:    doc.Name,
+					Members: doc.Members,
+				}
 				responseObj.Message = "Successfully Fetched Group Data"
 				responseObj.Status = true
 			} else {
