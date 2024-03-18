@@ -3,6 +3,7 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"objs"
 	"validation"
@@ -11,12 +12,41 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func LoginUser(req *http.Request, client *mongo.Client) objs.LoginResponse {
+type LoginHandlers struct{}
+
+func (LoginHandlers) Mongo(data objs.LoginRequest, client *mongo.Client) (objs.SecureUserData, error) {
+	var bsonData bson.M
+	dataObject := objs.UserData{}
+	userData := objs.SecureUserData{}
+	collection := client.Database(objs.UserData_DB.Database).Collection(objs.UserData_DB.Collection)
+	err := collection.FindOne(context.TODO(), bson.M{"email": data.Email}).Decode(&bsonData)
+	if err != nil {
+		return userData, err
+	} else {
+		byteData, err := bson.Marshal(bsonData)
+		if err != nil {
+			return userData, err
+		} else {
+			bson.Unmarshal(byteData, &dataObject)
+			if dataObject.Password == data.Password {
+				return objs.SecureUserData{
+					ID:          dataObject.ID,
+					Email:       dataObject.Email,
+					Name:        dataObject.Name,
+					PictureData: dataObject.PictureData,
+				}, nil
+			} else {
+				return userData, errors.New("password mismatch")
+			}
+		}
+	}
+}
+
+func LoginHandler(req *http.Request, client *mongo.Client) objs.LoginResponse {
 	var requestObj = objs.LoginRequest{}
 	var responseObj = objs.LoginResponse{}
-	var bsonData bson.D
 	json.NewDecoder(req.Body).Decode(&requestObj)
-	var dataObject = objs.UserData{}
+	var loginHandlers objs.LoginMethods = LoginHandlers{}
 	responseObj.Error = nil
 	switch req.Method {
 	case "GET":
@@ -25,31 +55,17 @@ func LoginUser(req *http.Request, client *mongo.Client) objs.LoginResponse {
 	case "POST":
 		switch objs.DB_CHOICE {
 		case "Mongo":
-			validationObj := validation.ValidateUserEmail(requestObj.Email, client)
+			var mongoValidationHandlers objs.MongoValidationMethods = validation.MongoValidationHandlers{}
+			validationObj := mongoValidationHandlers.ValidateUserEmail(requestObj.Email, client)
 			if validationObj.Status {
-				collection := client.Database(objs.UserData_DB.Database).Collection(objs.UserData_DB.Collection)
-				filter := bson.M{"email": requestObj.Email}
-				err := collection.FindOne(context.TODO(), filter).Decode(&bsonData)
+				loginData, err := loginHandlers.Mongo(requestObj, client)
 				if err != nil {
-					responseObj.Error = err
 					responseObj.Status = false
-					responseObj.Message = "Error while Fetching Data"
+					responseObj.Message = err.Error()
 				} else {
-					byteData, _ := bson.Marshal(bsonData)
-					bson.Unmarshal(byteData, &dataObject)
-					if dataObject.Password == requestObj.Password {
-						responseObj.Data = objs.SecureUserData{
-							Name:        dataObject.Name,
-							ID:          dataObject.ID,
-							PictureData: dataObject.PictureData,
-							Email:       dataObject.Email,
-						}
-						responseObj.Message = "Successfully Fetched User Data"
-						responseObj.Status = true
-					} else {
-						responseObj.Status = false
-						responseObj.Message = "Wrong Password"
-					}
+					responseObj.Data = loginData
+					responseObj.Status = true
+					responseObj.Message = "Successfully Fetched User Data"
 				}
 			} else {
 				responseObj.Status = false

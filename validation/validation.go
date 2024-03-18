@@ -9,7 +9,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func VerifyUserExists(keyType string, key string, client *mongo.Client) bool {
+type MongoValidationHandlers struct{}
+
+func (MongoValidationHandlers) VerifyUserExists(keyType string, key string, client *mongo.Client) bool {
 	collection := client.Database(objs.UserData_DB.Database).Collection(objs.UserData_DB.Collection)
 	var bsonData bson.D
 	var filter bson.M
@@ -31,9 +33,9 @@ func VerifyUserExists(keyType string, key string, client *mongo.Client) bool {
 	return false
 }
 
-func VerifyGroupExists(groupID string, client *mongo.Client) bool {
+func (MongoValidationHandlers) VerifyGroupExists(groupID string, client *mongo.Client) bool {
 	collection := client.Database(objs.GroupList_DB.Database).Collection(objs.GroupList_DB.Collection)
-	var bsonData objs.GroupData
+	var bsonData objs.GroupDataBSON
 	objectID, _ := primitive.ObjectIDFromHex(groupID)
 	err := collection.FindOne(context.TODO(), bson.M{"_id": objectID}).Decode(&bsonData)
 	if err != nil {
@@ -43,8 +45,9 @@ func VerifyGroupExists(groupID string, client *mongo.Client) bool {
 	}
 }
 
-func ValidateUserEmail(email string, client *mongo.Client) objs.StandardResponse {
-	if VerifyUserExists("email", email, client) {
+func (MongoValidationHandlers) ValidateUserEmail(email string, client *mongo.Client) objs.StandardResponse {
+	var mongoValidationHandlers objs.MongoValidationMethods = MongoValidationHandlers{}
+	if mongoValidationHandlers.VerifyUserExists("email", email, client) {
 		return objs.StandardResponse{
 			Status: true,
 		}
@@ -56,8 +59,9 @@ func ValidateUserEmail(email string, client *mongo.Client) objs.StandardResponse
 	}
 }
 
-func ValidateUserID(id string, client *mongo.Client) objs.StandardResponse {
-	if VerifyUserExists("id", id, client) {
+func (MongoValidationHandlers) ValidateUserID(id string, client *mongo.Client) objs.StandardResponse {
+	var mongoValidationHandlers objs.MongoValidationMethods = MongoValidationHandlers{}
+	if mongoValidationHandlers.VerifyUserExists("id", id, client) {
 		return objs.StandardResponse{
 			Status: true,
 		}
@@ -69,9 +73,10 @@ func ValidateUserID(id string, client *mongo.Client) objs.StandardResponse {
 	}
 }
 
-func ValidateGroup(id string, groupID string, client *mongo.Client) objs.StandardResponse {
-	isUserIDValid := VerifyUserExists("id", id, client)
-	isGroupIDValid := VerifyGroupExists(groupID, client)
+func (MongoValidationHandlers) ValidateGroup(id string, groupID string, client *mongo.Client) objs.StandardResponse {
+	var mongoValidationHandlers objs.MongoValidationMethods = MongoValidationHandlers{}
+	isUserIDValid := mongoValidationHandlers.VerifyUserExists("id", id, client)
+	isGroupIDValid := mongoValidationHandlers.VerifyGroupExists(groupID, client)
 	if isUserIDValid && isGroupIDValid {
 		return objs.StandardResponse{
 			Status: true,

@@ -1,5 +1,7 @@
 package objs
 
+import "go.mongodb.org/mongo-driver/mongo"
+
 type UserData struct {
 	ID          string `bson:"_id"`
 	Name        string `bson:"name"`
@@ -8,10 +10,16 @@ type UserData struct {
 	PictureData string `bson:"picturedata"`
 }
 
-type GroupData struct {
+type GroupDataBSON struct {
 	ID      string   `bson:"_id"`
 	Name    string   `bson:"name"`
 	Members []string `bson:"members"`
+}
+
+type GroupDataJSON struct {
+	ID      string   "json:\"id\""
+	Name    string   "json:\"name\""
+	Members []string "json:\"members\""
 }
 
 type SecureUserData struct {
@@ -88,11 +96,7 @@ type FetchGroupsRequest struct {
 }
 
 type FetchGroupsResponse struct {
-	Data []struct {
-		ID      string   `json:"id"`
-		Name    string   `json:"name"`
-		Members []string `json:"members"`
-	} `json:"data"`
+	Data []GroupDataJSON `json:"data"`
 	StandardResponse
 }
 
@@ -130,6 +134,8 @@ type MongoDBObj struct {
 	Database   string
 }
 
+var MONGO_URL = "mongodb://localhost:27017"
+
 var DATABASE string = "Lilac"
 
 var UserData_DB = MongoDBObj{
@@ -143,3 +149,47 @@ var GroupList_DB = MongoDBObj{
 }
 
 var DB_CHOICE = "Mongo"
+
+type SignupMethods interface {
+	Mongo(SignupRequest, *mongo.Client) (string, error)
+}
+
+type UpdateGroupMethods interface {
+	Mongo(UpdateGroupRequest, *mongo.Client) error
+}
+
+type LoginMethods interface {
+	Mongo(LoginRequest, *mongo.Client) (SecureUserData, error)
+}
+
+type FetchUsersMethods interface {
+	Mongo(FetchUsersRequest, *mongo.Client) ([]struct {
+		ID          string `json:"id"`
+		Name        string `json:"name"`
+		PictureData string `json:"pictureData"`
+	}, error)
+}
+
+type FetchGroupsMethods interface {
+	Mongo(FetchGroupsRequest, *mongo.Client) ([]GroupDataJSON, error)
+}
+
+type FetchGroupDataMethods interface {
+	Mongo(FetchGroupDataRequest, *mongo.Client) (GroupDataJSON, error)
+}
+
+type DeleteGroupMethods interface {
+	Mongo(DeleteGroupRequest, *mongo.Client) error
+}
+
+type CreateGroupMethods interface {
+	Mongo(CreateGroupRequest, *mongo.Client) (string, error)
+}
+
+type MongoValidationMethods interface {
+	VerifyUserExists(string, string, *mongo.Client) bool
+	VerifyGroupExists(string, *mongo.Client) bool
+	ValidateUserEmail(string, *mongo.Client) StandardResponse
+	ValidateUserID(string, *mongo.Client) StandardResponse
+	ValidateGroup(string, string, *mongo.Client) StandardResponse
+}

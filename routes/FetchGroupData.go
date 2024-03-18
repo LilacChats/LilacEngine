@@ -12,12 +12,38 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func FetchGroupData(req *http.Request, client *mongo.Client) objs.FetchGroupDataResponse {
+type FetchGroupDataHandlers struct{}
+
+func (FetchGroupDataHandlers) Mongo(data objs.FetchGroupDataRequest, client *mongo.Client) (objs.GroupDataJSON, error) {
+	var err error = nil
+	bsonData := bson.M{}
+	var doc objs.GroupDataBSON
+	collection := client.Database(objs.GroupList_DB.Database).Collection(objs.GroupList_DB.Collection)
+	groupID, err := primitive.ObjectIDFromHex(data.GroupID)
+	if err != nil {
+		return objs.GroupDataJSON{}, err
+	} else {
+		collection.FindOne(context.TODO(), bson.M{"_id": groupID}).Decode(&bsonData)
+		byteData, err := bson.Marshal(bsonData)
+		if err != nil {
+			return objs.GroupDataJSON{}, err
+		} else {
+			bson.Unmarshal(byteData, &doc)
+			return objs.GroupDataJSON{
+				ID:      doc.ID,
+				Name:    doc.Name,
+				Members: doc.Members,
+			}, err
+		}
+	}
+
+}
+
+func FetchGroupDataHandler(req *http.Request, client *mongo.Client) objs.FetchGroupDataResponse {
 	requestObj := objs.FetchGroupDataRequest{}
 	responseObj := objs.FetchGroupDataResponse{}
 	json.NewDecoder(req.Body).Decode(&requestObj)
-	bsonData := bson.M{}
-	var doc objs.GroupData
+	var fetchGroupDataHandlers objs.FetchGroupDataMethods = FetchGroupDataHandlers{}
 	switch req.Method {
 	case "GET":
 		responseObj.Message = "Bad route config"
@@ -25,24 +51,18 @@ func FetchGroupData(req *http.Request, client *mongo.Client) objs.FetchGroupData
 	case "POST":
 		switch objs.DB_CHOICE {
 		case "Mongo":
-			validationObj := validation.ValidateGroup(requestObj.UserID, requestObj.GroupID, client)
+			var mongoValidationHandlers objs.MongoValidationMethods = validation.MongoValidationHandlers{}
+			validationObj := mongoValidationHandlers.ValidateGroup(requestObj.UserID, requestObj.GroupID, client)
 			if validationObj.Status {
-				collection := client.Database(objs.GroupList_DB.Database).Collection(objs.GroupList_DB.Collection)
-				groupID, _ := primitive.ObjectIDFromHex(requestObj.GroupID)
-				collection.FindOne(context.TODO(), bson.M{"_id": groupID}).Decode(&bsonData)
-				byteData, _ := bson.Marshal(bsonData)
-				bson.Unmarshal(byteData, &doc)
-				responseObj.Data = struct {
-					ID      string   "json:\"id\""
-					Name    string   "json:\"name\""
-					Members []string "json:\"members\""
-				}{
-					ID:      doc.ID,
-					Name:    doc.Name,
-					Members: doc.Members,
+				groupData, err := fetchGroupDataHandlers.Mongo(requestObj, client)
+				if err != nil {
+					responseObj.Status = false
+					responseObj.Message = err.Error()
+				} else {
+					responseObj.Data = groupData
+					responseObj.Message = "Successfully Fetched Group Data"
+					responseObj.Status = true
 				}
-				responseObj.Message = "Successfully Fetched Group Data"
-				responseObj.Status = true
 			} else {
 				responseObj.Status = false
 				responseObj.Message = validationObj.Message
