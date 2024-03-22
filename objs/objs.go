@@ -1,6 +1,9 @@
 package objs
 
-import "go.mongodb.org/mongo-driver/mongo"
+import (
+	"github.com/charmbracelet/lipgloss"
+	"go.mongodb.org/mongo-driver/mongo"
+)
 
 type UserData struct {
 	ID          string `bson:"_id"`
@@ -193,3 +196,6 @@ type MongoValidationMethods interface {
 	ValidateUserID(string, *mongo.Client) StandardResponse
 	ValidateGroup(string, string, *mongo.Client) StandardResponse
 }
+
+var DBS = []string{"MongoDB", "SQL"}
+var SelectedItemStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#4A89FD")).Bold(true)

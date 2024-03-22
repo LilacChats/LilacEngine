@@ -24,7 +24,7 @@ func (FetchUsersHandlers) Mongo(data objs.FetchUsersRequest, client *mongo.Clien
 	doc := struct {
 		ID          string `bson:"_id"`
 		Name        string `bson:"name"`
-		PictureData string `bson:"pictureData"`
+		PictureData string `bson:"picturedata"`
 	}{}
 	usersData := []struct {
 		ID          string `json:"id"`

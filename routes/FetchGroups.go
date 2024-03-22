@@ -17,6 +17,7 @@ func (FetchGroupsHandlers) Mongo(data objs.FetchGroupsRequest, client *mongo.Cli
 	doc := objs.GroupDataBSON{}
 	groupData := []objs.GroupDataJSON{}
 	var bsonData []bson.M
+	var isUserPresentInGroup = false
 	var err error
 	collection := client.Database(objs.GroupList_DB.Database).Collection(objs.GroupList_DB.Collection)
 	cursor, err := collection.Find(context.TODO(), bson.D{})
@@ -30,11 +31,20 @@ func (FetchGroupsHandlers) Mongo(data objs.FetchGroupsRequest, client *mongo.Cli
 				return groupData, err
 			} else {
 				bson.Unmarshal(byteData, &doc)
-				groupData = append(groupData, objs.GroupDataJSON{
-					ID:      doc.ID,
-					Name:    doc.Name,
-					Members: doc.Members,
-				})
+				isUserPresentInGroup = false
+				for _, item := range doc.Members {
+					if item == data.UserID {
+						isUserPresentInGroup = true
+						break
+					}
+				}
+				if isUserPresentInGroup {
+					groupData = append(groupData, objs.GroupDataJSON{
+						ID:      doc.ID,
+						Name:    doc.Name,
+						Members: doc.Members,
+					})
+				}
 			}
 		}
 		cursor.Close(context.TODO())

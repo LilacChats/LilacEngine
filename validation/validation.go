@@ -2,14 +2,21 @@ package validation
 
 import (
 	"context"
+	"fmt"
 	"objs"
 
+	"github.com/charmbracelet/lipgloss"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type MongoValidationHandlers struct{}
+
+func DisplayError(message string) {
+	fmt.Print(lipgloss.NewStyle().PaddingLeft(1).PaddingRight(1).Background(lipgloss.Color("9")).Render("Error"))
+	fmt.Println(lipgloss.NewStyle().PaddingLeft(1).PaddingRight(1).Background(lipgloss.Color("5")).Render(message))
+}
 
 func (MongoValidationHandlers) VerifyUserExists(keyType string, key string, client *mongo.Client) bool {
 	collection := client.Database(objs.UserData_DB.Database).Collection(objs.UserData_DB.Collection)
