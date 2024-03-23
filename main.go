@@ -95,6 +95,11 @@ func StartServer(client *mongo.Client, URL string) {
 		response, _ := json.Marshal(routes.UpdateGroupHandler(req, client))
 		res.Write(response)
 	})
+	mux.HandleFunc("/logout", func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Set("Content-Type", "application/json")
+		response, _ := json.Marshal(routes.LogoutHandler(req, client))
+		res.Write(response)
+	})
 	err := http.ListenAndServe(":3000", mux)
 	if err != nil {
 		fmt.Println("Failed to started server!\n", err)
@@ -132,7 +137,7 @@ func main() {
 	}
 	dbType := os.Getenv("DB")
 	if dbType == "Mongo" {
-		objs.MONGO_URL = os.Getenv("MongoURL")
+		objs.MONGO_URL = os.Getenv("URL")
 	}
 	args := os.Args
 	args = args[1:]

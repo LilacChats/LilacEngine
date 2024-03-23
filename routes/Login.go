@@ -10,33 +10,40 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type LoginHandlers struct{}
 
-func (LoginHandlers) Mongo(data objs.LoginRequest, client *mongo.Client) (objs.SecureUserData, error) {
+func (LoginHandlers) Mongo(data objs.LoginRequest, client *mongo.Client) (objs.UserData, error) {
 	var bsonData bson.M
 	dataObject := objs.UserData{}
-	userData := objs.SecureUserData{}
 	collection := client.Database(objs.UserData_DB.Database).Collection(objs.UserData_DB.Collection)
 	err := collection.FindOne(context.TODO(), bson.M{"email": data.Email}).Decode(&bsonData)
 	if err != nil {
-		return userData, err
+		return objs.UserData{}, err
 	} else {
 		byteData, err := bson.Marshal(bsonData)
 		if err != nil {
-			return userData, err
+			return objs.UserData{}, err
 		} else {
 			bson.Unmarshal(byteData, &dataObject)
-			if dataObject.Password == data.Password {
-				return objs.SecureUserData{
-					ID:          dataObject.ID,
-					Email:       dataObject.Email,
-					Name:        dataObject.Name,
-					PictureData: dataObject.PictureData,
-				}, nil
+			err := bcrypt.CompareHashAndPassword([]byte(dataObject.Password), []byte(data.Password))
+			if err == nil {
+				_, err := collection.UpdateOne(context.TODO(), bson.M{"email": data.Email}, bson.M{"$set": bson.M{"online": true}})
+				if err == nil {
+					return objs.UserData{
+						ID:          dataObject.ID,
+						Email:       dataObject.Email,
+						Name:        dataObject.Name,
+						PictureData: dataObject.PictureData,
+						Password:    dataObject.Password,
+					}, nil
+				} else {
+					return objs.UserData{}, err
+				}
 			} else {
-				return userData, errors.New("password mismatch")
+				return objs.UserData{}, errors.New("Password Mismatch")
 			}
 		}
 	}

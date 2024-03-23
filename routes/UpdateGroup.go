@@ -24,11 +24,7 @@ func (UpdateGroupHandlers) Mongo(data objs.UpdateGroupRequest, client *mongo.Cli
 			GroupID: data.GroupID,
 		}
 		err = deleteGroupHandlers.Mongo(deleteRequest, client)
-		if err != nil {
-			return err
-		} else {
-			return nil
-		}
+		return err
 	} else {
 		collection := client.Database(objs.GroupList_DB.Database).Collection(objs.GroupList_DB.Collection)
 		objectID, err = primitive.ObjectIDFromHex(data.GroupID)

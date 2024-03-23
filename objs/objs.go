@@ -7,10 +7,11 @@ import (
 
 type UserData struct {
 	ID          string `bson:"_id"`
-	Name        string `bson:"name"`
-	Email       string `bson:"email"`
-	Password    string `bson:"password"`
-	PictureData string `bson:"picturedata"`
+	Name        string `json:"name"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	PictureData string `json:"picturedata"`
+	Online      bool   `json:"online"`
 }
 
 type GroupDataBSON struct {
@@ -38,11 +39,21 @@ type StandardResponse struct {
 	Error   error  `json:"error"`
 }
 
+type LogoutRequest struct {
+	UserID string `json:"userid"`
+}
+
+type LogoutResponse struct {
+	Data struct{} `json:"data"`
+	StandardResponse
+}
+
 type SignupRequest struct {
 	Name        string `json:"name"`
 	Email       string `json:"email"`
 	Password    string `json:"password"`
 	PictureData string `json:"pictureData"`
+	Online      bool   `json:"online"`
 }
 
 type UpdateGroupRequest struct {
@@ -128,7 +139,7 @@ type SignupResponse struct {
 	StandardResponse
 }
 type LoginResponse struct {
-	Data SecureUserData `json:"data"`
+	Data UserData `json:"data"`
 	StandardResponse
 }
 
@@ -161,8 +172,8 @@ type UpdateGroupMethods interface {
 	Mongo(UpdateGroupRequest, *mongo.Client) error
 }
 
-type LoginMethods interface {
-	Mongo(LoginRequest, *mongo.Client) (SecureUserData, error)
+type LogoutMethods interface {
+	Mongo(LogoutRequest, *mongo.Client) error
 }
 
 type FetchUsersMethods interface {
@@ -171,6 +182,10 @@ type FetchUsersMethods interface {
 		Name        string `json:"name"`
 		PictureData string `json:"pictureData"`
 	}, error)
+}
+
+type LoginMethods interface {
+	Mongo(LoginRequest, *mongo.Client) (UserData, error)
 }
 
 type FetchGroupsMethods interface {

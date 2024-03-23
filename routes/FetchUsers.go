@@ -55,15 +55,17 @@ func (FetchUsersHandlers) Mongo(data objs.FetchUsersRequest, client *mongo.Clien
 				}{}, err
 			} else {
 				bson.Unmarshal(byteData, &doc)
-				usersData = append(usersData, struct {
-					ID          string `json:"id"`
-					Name        string `json:"name"`
-					PictureData string `json:"pictureData"`
-				}{
-					ID:          doc.ID,
-					Name:        doc.Name,
-					PictureData: doc.PictureData,
-				})
+				if doc.ID != data.UserID {
+					usersData = append(usersData, struct {
+						ID          string `json:"id"`
+						Name        string `json:"name"`
+						PictureData string `json:"pictureData"`
+					}{
+						ID:          doc.ID,
+						Name:        doc.Name,
+						PictureData: doc.PictureData,
+					})
+				}
 			}
 		}
 		cursor.Close(context.TODO())
