@@ -13,10 +13,13 @@ import (
 	"validation"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
 	"github.com/mattn/go-tty"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+var upgrader = websocket.Upgrader{}
 
 func GenerateClientConnection() (*mongo.Client, error) {
 	client, err := InitializeConnection(objs.MONGO_URL)
@@ -54,7 +57,48 @@ func ReRenderDBSelection(selectedOption int) {
 }
 
 func StartServer(client *mongo.Client, URL string) {
+	clients := []string{}
 	mux := http.NewServeMux()
+	mux.HandleFunc("/sendmessage", func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Set("Content-Type", "application/json")
+		response, _ := json.Marshal(routes.SendMessageHandler(req, client))
+		res.Write(response)
+	})
+	mux.HandleFunc("/connect", func(res http.ResponseWriter, req *http.Request) {
+		conn, err := upgrader.Upgrade(res, req, nil)
+		packet := struct {
+			Type string `json:"type"`
+			ID1  string `json:"id1"`
+			ID2  string `json:"id2"`
+		}{}
+
+		if err == nil {
+			defer conn.Close()
+			for {
+				messageType, message, _ := conn.ReadMessage()
+				err := json.Unmarshal(message, &packet)
+				if err == nil {
+					checker := false
+					for i := 0; i < len(clients); i++ {
+						if clients[i] == packet.ID1 {
+							checker = true
+							break
+						}
+					}
+					if checker == false {
+						clients = append(clients, packet.ID1)
+					}
+					messageData := routes.FetchAllChatsHandler(packet.ID1, packet.ID2, client)
+					jsonData, err := json.Marshal(messageData)
+					if err == nil {
+						conn.WriteMessage(messageType, []byte(jsonData))
+					}
+				} else {
+					conn.WriteMessage(messageType, []byte(err.Error()))
+				}
+			}
+		}
+	})
 	mux.HandleFunc("/usersignup", func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("Content-Type", "application/json")
 		response, _ := json.Marshal(routes.SignupHandler(req, client))

@@ -14,6 +14,12 @@ type UserData struct {
 	Online      bool   `json:"online"`
 }
 
+type DMChannel struct {
+	ChannelID string `bson:"_id"`
+	ID1       string `json:"id1"`
+	ID2       string `json:"id2"`
+}
+
 type GroupDataBSON struct {
 	ID      string   `bson:"_id"`
 	Name    string   `bson:"name"`
@@ -132,6 +138,29 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+type MessageBSON struct {
+	MessageID  string `bson:"_id"`
+	SenderID   string `bson:"senderid"`
+	Message    string `bson:"message"`
+	ReceiverID string `bson:"receiverid"`
+	Timestamp  int64  `bson:"timestamp"`
+}
+
+type Message struct {
+	MessageID  string `json:"messageID"`
+	SenderID   string `json:"senderID"`
+	Message    string `json:"message"`
+	ReceiverID string `json:"receiverID"`
+	Timestamp  int64  `json:"timestamp"`
+}
+
+type SendMessageRequest Message
+
+type SendMessageResponse struct {
+	Data struct{} `json:"data"`
+	StandardResponse
+}
+
 type SignupResponse struct {
 	Data struct {
 		ID string `json:"id"`
@@ -152,6 +181,15 @@ var MONGO_URL = "mongodb://localhost:27017"
 
 var DATABASE string = "Lilac"
 
+var DM_CHANNELS_DATABASE string = "LilacDMChannels"
+
+var GROUP_CHANNELS_DATABASE string = "LilacGroupChannels"
+
+var ChannelList_DB = MongoDBObj{
+	Collection: "Channels",
+	Database:   DATABASE,
+}
+
 var UserData_DB = MongoDBObj{
 	Collection: "UserData",
 	Database:   DATABASE,
@@ -163,6 +201,10 @@ var GroupList_DB = MongoDBObj{
 }
 
 var DB_CHOICE = "Mongo"
+
+type SendMessageMethods interface {
+	Mongo(SendMessageRequest, *mongo.Client) error
+}
 
 type SignupMethods interface {
 	Mongo(SignupRequest, *mongo.Client) (string, error)
@@ -186,6 +228,10 @@ type FetchUsersMethods interface {
 
 type LoginMethods interface {
 	Mongo(LoginRequest, *mongo.Client) (UserData, error)
+}
+
+type FetchAllChatDataMethods interface {
+	Mongo(string, *mongo.Client) ([]Message, error)
 }
 
 type FetchGroupsMethods interface {
